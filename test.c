@@ -163,10 +163,21 @@ static void create_objects(void)
     volatile double zero = 0.0;
 
     /* Here we construct some JSON standards, from the JSON site. */
-
+    /*
+    {
+        "name": "Jack (\"Bee\") Nimble",
+        "format":       {
+                "type": "rect",
+                "width":        1920,
+                "height":       1080,
+                "interlace":    false,
+                "frame rate":   24
+        }
+    }
+    */
     /* Our "Video" datatype: */
     root = cJSON_CreateObject();
-    cJSON_AddItemToObject(root, "name", cJSON_CreateString("Jack (\"Bee\") Nimble"));
+    cJSON_AddItemToObject(root, "name", cJSON_CreateString("Jack \n (\"Bee\") Nimble"));
     cJSON_AddItemToObject(root, "format", fmt = cJSON_CreateObject());
     cJSON_AddStringToObject(fmt, "type", "rect");
     cJSON_AddNumberToObject(fmt, "width", 1920);
@@ -174,7 +185,7 @@ static void create_objects(void)
     cJSON_AddFalseToObject (fmt, "interlace");
     cJSON_AddNumberToObject(fmt, "frame rate", 24);
 
-    /* Print to text */
+    /* Print to text 实现细节就是在初始地址开始，一个个的把root里面的内容写在初始地址的后面，一大堆指针操作后移字符串memcpy */
     if (print_preallocated(root) != 0) {
         cJSON_Delete(root);
         exit(EXIT_FAILURE);
@@ -260,7 +271,6 @@ int CJSON_CDECL main(void)
 {
     /* print the version */
     printf("Version: %s\n", cJSON_Version());
-
     /* Now some samplecode for building objects concisely: */
     create_objects();
 

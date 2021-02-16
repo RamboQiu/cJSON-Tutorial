@@ -71,6 +71,7 @@ then using the CJSON_API_VISIBILITY flag to "export" the same symbols the way CJ
 #define CJSON_CDECL
 #define CJSON_STDCALL
 
+/* visibility用于设置动态链接库中函数的可见性，将变量或函数设置为hidden，则该符号仅在本so中可见，在其他库中则不可见。*/
 #if (defined(__GNUC__) || defined(__SUNPRO_CC) || defined (__SUNPRO_C)) && defined(CJSON_API_VISIBILITY)
 #define CJSON_PUBLIC(type)   __attribute__((visibility("default"))) type
 #else
@@ -87,38 +88,42 @@ then using the CJSON_API_VISIBILITY flag to "export" the same symbols the way CJ
 
 /* cJSON Types: */
 #define cJSON_Invalid (0)
-#define cJSON_False  (1 << 0)
-#define cJSON_True   (1 << 1)
-#define cJSON_NULL   (1 << 2)
-#define cJSON_Number (1 << 3)
-#define cJSON_String (1 << 4)
-#define cJSON_Array  (1 << 5)
-#define cJSON_Object (1 << 6)
-#define cJSON_Raw    (1 << 7) /* raw json */
+#define cJSON_False  (1 << 0) /* 1 */
+#define cJSON_True   (1 << 1) /* 2 */
+#define cJSON_NULL   (1 << 2) /* 4 */
+#define cJSON_Number (1 << 3) /* 8 */
+#define cJSON_String (1 << 4) /* 16 */
+#define cJSON_Array  (1 << 5) /* 32 */
+#define cJSON_Object (1 << 6) /* 64 */
+#define cJSON_Raw    (1 << 7) /* 128 raw json */
 
-#define cJSON_IsReference 256
-#define cJSON_StringIsConst 512
+#define cJSON_IsReference 256 /* 1 << 8 */
+#define cJSON_StringIsConst 512 /* 1 << 9 */
 
-/* The cJSON structure: */
+/* The cJSON structure: 就是json item "key":"value"*/
 typedef struct cJSON
 {
     /* next/prev allow you to walk array/object chains. Alternatively, use GetArraySize/GetArrayItem/GetObjectItem */
-    struct cJSON *next;
-    struct cJSON *prev;
+    struct cJSON *next;/* 指向下一个item */
+    struct cJSON *prev;/* 指向上一个item */
     /* An array or object item will have a child pointer pointing to a chain of the items in the array/object. */
-    struct cJSON *child;
+    struct cJSON *child;/* 当前的value是个数组或是对象，这个就是指向当前的value */
 
-    /* The type of the item, as above. */
+    /* The type of the item, as above. 
+    代表这个json的item类型，bool的，或是数字，或是字符串，数组啥的
+    */
     int type;
 
-    /* The item's string, if type==cJSON_String  and type == cJSON_Raw */
+    /* The item's string, if type==cJSON_String  and type == cJSON_Raw 
+    如果保存的是string这个就是他的value值，"key":"value"*/
     char *valuestring;
     /* writing to valueint is DEPRECATED, use cJSON_SetNumberValue instead */
     int valueint;
     /* The item's number, if type==cJSON_Number */
     double valuedouble;
 
-    /* The item's name string, if this item is the child of, or is in the list of subitems of an object. */
+    /* The item's name string, if this item is the child of, or is in the list of subitems of an object.
+    就是key，"key":"value" */
     char *string;
 } cJSON;
 

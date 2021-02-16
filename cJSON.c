@@ -184,7 +184,7 @@ static void * CJSON_CDECL internal_realloc(void *pointer, size_t size)
 #define static_strlen(string_literal) (sizeof(string_literal) - sizeof(""))
 
 static internal_hooks global_hooks = { internal_malloc, internal_free, internal_realloc };
-
+/*复制string到一个新的指针里面alloc memcpy*/
 static unsigned char* cJSON_strdup(const unsigned char* string, const internal_hooks * const hooks)
 {
     size_t length = 0;
@@ -242,7 +242,12 @@ static cJSON *cJSON_New_Item(const internal_hooks * const hooks)
 {
     cJSON* node = (cJSON*)hooks->allocate(sizeof(cJSON));
     if (node)
-    {
+    {  /*https://www.runoob.com/cprogramming/c-function-memset.html 
+        复制字符 '\0'（一个无符号字符）到参数 node 所指向的字符串的前 sizeof(cJSON) 个字符
+        就是类似初始化内存地址的内容
+        https://www.cnblogs.com/oomusou/archive/2006/11/25/572127.html
+        https://stackoverflow.com/questions/17288859/using-memset-for-integer-array-in-c
+        */
         memset(node, '\0', sizeof(cJSON));
     }
 
@@ -431,7 +436,7 @@ typedef struct
     size_t offset;
     size_t depth; /* current nesting depth (for formatted printing) */
     cJSON_bool noalloc;
-    cJSON_bool format; /* is this print a formatted print */
+    cJSON_bool format; /* is this print a formatted print 作用就是在合适的地方加换行符和制表符\n\t */
     internal_hooks hooks;
 } printbuffer;
 
@@ -938,6 +943,7 @@ static cJSON_bool print_string_ptr(const unsigned char * const input, printbuffe
                 escape_characters++;
                 break;
             default:
+                /* ascii 0就是32 */
                 if (*input_pointer < 32)
                 {
                     /* UTF-16 escape sequence uXXXX */
@@ -954,7 +960,7 @@ static cJSON_bool print_string_ptr(const unsigned char * const input, printbuffe
         return false;
     }
 
-    /* no characters have to be escaped */
+    /* no characters have to be escaped 没有转义字符 */
     if (escape_characters == 0)
     {
         output[0] = '\"';
@@ -965,7 +971,7 @@ static cJSON_bool print_string_ptr(const unsigned char * const input, printbuffe
         return true;
     }
 
-    output[0] = '\"';
+    output[0] = '\"';/* 为啥这里不能直接用memcpy? 尝试都走上面的if，输出结果里面不会有转义字符 \，因为在format的格式下，现有的转义要保留 \" 要变成 \\\" */
     output_pointer = output + 1;
     /* copy the string */
     for (input_pointer = input; *input_pointer != '\0'; (void)input_pointer++, output_pointer++)
@@ -1183,9 +1189,10 @@ CJSON_PUBLIC(cJSON *) cJSON_ParseWithLength(const char *value, size_t buffer_len
 static unsigned char *print(const cJSON * const item, cJSON_bool format, const internal_hooks * const hooks)
 {
     static const size_t default_buffer_size = 256;
+    /* 这里用这种方式来代替alloc */
     printbuffer buffer[1];
     unsigned char *printed = NULL;
-
+    /* 初始化内存空间 */
     memset(buffer, 0, sizeof(buffer));
 
     /* create buffer */
@@ -1194,7 +1201,7 @@ static unsigned char *print(const cJSON * const item, cJSON_bool format, const i
     buffer->format = format;
     buffer->hooks = *hooks;
     if (buffer->buffer == NULL)
-    {
+    {/* 创建失败 */
         goto fail;
     }
 
@@ -1229,7 +1236,7 @@ static unsigned char *print(const cJSON * const item, cJSON_bool format, const i
     }
 
     return printed;
-
+/* C 语言中的 goto 语句允许把控制无条件转移到同一函数内的被标记的语句。但是不建议使用 */
 fail:
     if (buffer->buffer != NULL)
     {
@@ -1920,7 +1927,8 @@ CJSON_PUBLIC(cJSON_bool) cJSON_HasObjectItem(const cJSON *object, const char *st
     return cJSON_GetObjectItem(object, string) ? 1 : 0;
 }
 
-/* Utility for array list handling. */
+/* Utility for array list handling.
+json的前后两个节点建立双向链接 */
 static void suffix_object(cJSON *prev, cJSON *item)
 {
     prev->next = item;
@@ -1948,7 +1956,8 @@ static cJSON *create_reference(const cJSON *item, const internal_hooks * const h
     reference->next = reference->prev = NULL;
     return reference;
 }
-
+/* 在根节点的最后一个子节点的next拼接一个item节点
+参数这里还不如用root命名看得舒服 */
 static cJSON_bool add_item_to_array(cJSON *array, cJSON *item)
 {
     cJSON *child = NULL;
@@ -1976,6 +1985,13 @@ static cJSON_bool add_item_to_array(cJSON *array, cJSON *item)
         {
             suffix_object(child->prev, item);
             array->child->prev = item;
+/*
+            A
+                
+    B       C    next->     D
+    B       C    <-prev     D
+A.child   A.child.prev->A.child.prev
+*/
         }
     }
 
@@ -2026,7 +2042,7 @@ static cJSON_bool add_item_to_object(cJSON * const object, const char * const st
         {
             return false;
         }
-
+        /*StringIsConst是 1 << 9, type类型是1-7内的，newtype应该都是等于item->type的，为什么不直接赋值？*/
         new_type = item->type & ~cJSON_StringIsConst;
     }
 
@@ -2040,7 +2056,7 @@ static cJSON_bool add_item_to_object(cJSON * const object, const char * const st
 
     return add_item_to_array(object, item);
 }
-
+/*在object的中括号里面添加：key=string value=item*/
 CJSON_PUBLIC(cJSON_bool) cJSON_AddItemToObject(cJSON *object, const char *string, cJSON *item)
 {
     return add_item_to_object(object, string, item, &global_hooks, false);
