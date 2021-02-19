@@ -53,7 +53,9 @@ static int print_preallocated(cJSON *root)
     out = cJSON_Print(root);
 
     /* create buffer to succeed */
-    /* the extra 5 bytes are because of inaccuracies when reserving memory */
+    /* the extra 5 bytes are because of inaccuracies when reserving memory
+    额外的5个字节是由于保留内存时的不准确性 ？？这是什么知识点？见下面的”force it to fail“
+     */
     len = strlen(out) + 5;
     buf = (char*)malloc(len);
     if (buf == NULL)
@@ -70,8 +72,11 @@ static int print_preallocated(cJSON *root)
         printf("Failed to allocate memory.\n");
         exit(1);
     }
+    printf("this is out:\n%s\n", out);
 
-    /* Print to buffer */
+    /* Print to buffer
+    这里是何用意？out都值和buf都值是一样都
+     */
     if (!cJSON_PrintPreallocated(root, buf, (int)len, 1)) {
         printf("cJSON_PrintPreallocated failed!\n");
         if (strcmp(out, buf) != 0) {
@@ -86,7 +91,7 @@ static int print_preallocated(cJSON *root)
     }
 
     /* success */
-    printf("%s\n", buf);
+    printf("this is buf:\n%s\n", buf);
 
     /* force it to fail */
     if (cJSON_PrintPreallocated(root, buf_fail, (int)len_fail, 1)) {
@@ -98,6 +103,7 @@ static int print_preallocated(cJSON *root)
         free(buf);
         return -1;
     }
+    printf("this is buf_fail:\n%s\n", buf_fail);
 
     free(out);
     free(buf_fail);

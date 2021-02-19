@@ -440,7 +440,16 @@ typedef struct
     internal_hooks hooks;
 } printbuffer;
 
-/* realloc printbuffer if necessary to have at least "needed" bytes more */
+typedef struct
+{
+    unsigned char *buffer;
+    size_t length;
+    size_t offset;
+} test11;
+
+/* realloc printbuffer if necessary to have at least "needed" bytes more
+确认p的内存空间是否还够放数据，空间不够就扩展空间，返回还能放数据内存段位的初始位置的地址
+ */
 static unsigned char* ensure(printbuffer * const p, size_t needed)
 {
     unsigned char *newbuffer = NULL;
@@ -464,12 +473,17 @@ static unsigned char* ensure(printbuffer * const p, size_t needed)
     }
 
     needed += p->offset + 1;
+    /*
+    return p->buffer + p->offset;
+    直接就return这个值，得要考虑使用malloc以外得空间的问题。这部分空间是不稳定的。
+    */
     if (needed <= p->length)
     {
         return p->buffer + p->offset;
     }
-
+    /* cJSON_PrintPreallocated(root, buf_fail, (int)len_fail, 1) 会走到这里，因为内存不够了*/
     if (p->noalloc) {
+        /* 没有扩展空间的方法 */
         return NULL;
     }
 
@@ -490,7 +504,7 @@ static unsigned char* ensure(printbuffer * const p, size_t needed)
     {
         newsize = needed * 2;
     }
-
+    /* 扩展空间 */
     if (p->hooks.reallocate != NULL)
     {
         /* reallocate with realloc if available */
@@ -1189,12 +1203,19 @@ CJSON_PUBLIC(cJSON *) cJSON_ParseWithLength(const char *value, size_t buffer_len
 static unsigned char *print(const cJSON * const item, cJSON_bool format, const internal_hooks * const hooks)
 {
     static const size_t default_buffer_size = 256;
-    /* 这里用这种方式来代替alloc */
+    /* 这里用这种方式来代替alloc 
+    另一种方法初始化 printbuffer p = { 0, 0, 0, 0, 0, 0, { 0, 0, 0 } }; 见cJSON_PrintPreallocated方法
+    */
     printbuffer buffer[1];
     unsigned char *printed = NULL;
-    /* 初始化内存空间 */
+    char test[] = "i'm a string";;
+    /* 初始化内存空间 sizeof(buffer) == 64
+    test11 testtmp[1];
+    memset(testtmp, 0, sizeof(testtmp)); sizeof(testtmp)==24
+    */
     memset(buffer, 0, sizeof(buffer));
 
+    printf("%s",test);
     /* create buffer */
     buffer->buffer = (unsigned char*) hooks->allocate(default_buffer_size);
     buffer->length = default_buffer_size;
@@ -1713,7 +1734,7 @@ fail:
     return false;
 }
 
-/* Render an object to text. */
+/* Render an object to text.  将对象输出为string */
 static cJSON_bool print_object(const cJSON * const item, printbuffer * const output_buffer)
 {
     unsigned char *output_pointer = NULL;
