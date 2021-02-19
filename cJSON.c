@@ -544,13 +544,15 @@ static unsigned char* ensure(printbuffer * const p, size_t needed)
 static void update_offset(printbuffer * const buffer)
 {
     const unsigned char *buffer_pointer = NULL;
+    size_t tmpsize = 0;
     if ((buffer == NULL) || (buffer->buffer == NULL))
     {
         return;
     }
     buffer_pointer = buffer->buffer + buffer->offset;
-
+    tmpsize = strlen((const char*)buffer->buffer);
     buffer->offset += strlen((const char*)buffer_pointer);
+    /* tmpsize == buffer->offset 为啥不简单的使用tmpsize的方法？ */
 }
 
 /* securely comparison of floating-point variables */
@@ -1233,10 +1235,12 @@ static unsigned char *print(const cJSON * const item, cJSON_bool format, const i
     }
     update_offset(buffer);
 
-    /* check if reallocate is available */
+    /* check if reallocate is available
+    详细介绍见
+    主要作用是将buffer->buffer复制到printed中，然后清掉buffer->buffer的指针 */
     if (hooks->reallocate != NULL)
-    {
-        printed = (unsigned char*) hooks->reallocate(buffer->buffer, buffer->offset + 1);
+    {/* printed的地址 == buffer->buffer的地址 */
+        printed = (unsigned char*) hooks->reallocate(buffer->buffer, buffer->offset + 1);/* 所以这里为什么+1？ */
         if (printed == NULL) {
             goto fail;
         }
