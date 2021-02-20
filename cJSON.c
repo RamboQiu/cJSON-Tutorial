@@ -811,7 +811,7 @@ static cJSON_bool parse_string(cJSON * const item, parse_buffer * const input_bu
             {
                 if ((size_t)(input_end + 1 - input_buffer->content) >= input_buffer->length)
                 {
-                    /* prevent buffer overflow when last input character is a backslash */
+                    /* prevent buffer overflow when last input character is a backslash反斜杠 */
                     goto fail;
                 }
                 skipped_bytes++;
@@ -898,7 +898,7 @@ static cJSON_bool parse_string(cJSON * const item, parse_buffer * const input_bu
 
     input_buffer->offset = (size_t) (input_end - input_buffer->content);
     input_buffer->offset++;
-
+    /* "\"hello\"" output="hello"  */
     return true;
 
 fail:

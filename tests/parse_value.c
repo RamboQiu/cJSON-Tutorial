@@ -45,6 +45,7 @@ static void assert_parse_value(const char *string, int type)
 {
     parse_buffer buffer = { 0, 0, 0, 0, { 0, 0, 0 } };
     buffer.content = (const unsigned char*) string;
+    /* 需要加字符串结尾的 \0 的大小，strlen的取值长度不会计算 \0 */
     buffer.length = strlen(string) + sizeof("");
     buffer.hooks = global_hooks;
 

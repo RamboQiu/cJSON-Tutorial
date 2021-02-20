@@ -72,7 +72,7 @@ static int print_preallocated(cJSON *root)
         printf("Failed to allocate memory.\n");
         exit(1);
     }
-    printf("this is out:\n%s\n", out);
+    /* printf("this is out:\n%s\n", out); */
 
     /* Print to buffer
     这里是何用意？out都值和buf都值是一样都
@@ -103,7 +103,7 @@ static int print_preallocated(cJSON *root)
         free(buf);
         return -1;
     }
-    printf("this is buf_fail:\n%s\n", buf_fail);
+    /* printf("this is buf_fail:\n%s\n", buf_fail); */
 
     free(out);
     free(buf_fail);
